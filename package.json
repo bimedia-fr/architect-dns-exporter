@@ -18,6 +18,7 @@
     "mocha": "^8.0.1"
   },
   "dependencies": {
+    "find-pkg": "^2.0.0",
     "pkgcloud": "^2.2.0"
   }
 }

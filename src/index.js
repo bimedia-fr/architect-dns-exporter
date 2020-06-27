@@ -1,5 +1,6 @@
 const os = require('os'),
   pkgcloud = require('pkgcloud'),
+  findPkg = require('find-pkg'),
   DNSExporter = require('./DNSExporter')
 
 function getFQDN(zone, host, done) {
@@ -17,16 +18,18 @@ module.exports = function setup(config, imports, done) {
     const client = pkgcloud.dns.createClient(config.client);
     let targetZoneName = config.targetZone;
     let exporter;
-    const package = require.main.require('package.json');
 
-    imports.hub.on('app', (app) => {
-        (config.services|[]).forEach((shortName) => {
-            let name = '_' + shortName + '._tcp.' + package.name + '.' + targetZoneName;
-            let port = app.services[shortName].address.port;
-            log.info('registering service', name, 'has listening on', port, '@', exporter.fqdn);
-            exporter.export(name, port, config.weight || 33);
+    findPkg('..').then((file) => require(file)).then((package) => {        
+        imports.hub.on('app', (app) => {
+            (config.services|[]).forEach((shortName) => {
+                let name = '_' + shortName + '._tcp.' + package.name + '.' + targetZoneName;
+                let port = app.services[shortName].address.port;
+                log.info('registering service', name, 'has listening on', port, '@', exporter.fqdn);
+                exporter.export(name, port, config.weight || 33);
+            });
         });
     });
+
     
 
     client.getZones({}, (err, zones) => {
