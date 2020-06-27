@@ -1,0 +1,23 @@
+{
+  "name": "architect-dns-exporter",
+  "version": "1.0.0",
+  "description": "export socket to SRV dns records",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "mocha test/*.test.js"
+  },
+  "keywords": [
+    "architect",
+    "dns",
+    "SRV"
+  ],
+  "author": "jerome creignou",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^7.3.1",
+    "mocha": "^8.0.1"
+  },
+  "dependencies": {
+    "pkgcloud": "^2.2.0"
+  }
+}
