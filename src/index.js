@@ -21,7 +21,7 @@ module.exports = function setup(config, imports, done) {
 
     imports.hub.on('app', (app) => {
         (config.services|[]).forEach((shortName) => {
-            let name = '_' + shortName + '._tcp.' + package.name;
+            let name = '_' + shortName + '._tcp.' + package.name + '.' + targetZoneName;
             let port = app.services[shortName].address.port;
             log.info('registering service', name, 'has listening on', port, '@', exporter.fqdn);
             exporter.export(name, port, config.weight || 33);
