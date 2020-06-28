@@ -1,16 +1,6 @@
 const os = require('os'),
   pkgcloud = require('pkgcloud'),
-  findPkg = require('find-pkg'),
   DNSExporter = require('./DNSExporter')
-
-function getFQDN(zone, host, done) {
-    client.getRecords(String(zone.id), (err, records) => {
-        if (err) {
-            return done(err);
-        }
-        return records.filter(r => r.type === "A" && r.name.indexOf(host) === 0)[0].name;
-    });
-}
 
 module.exports = function setup(config, imports, done) {
     const log = imports.log.getLogger("dns-exporter");
@@ -19,17 +9,23 @@ module.exports = function setup(config, imports, done) {
     let targetZoneName = config.targetZone;
     let exporter;
 
-    findPkg('..').then((file) => require(file)).then((package) => {        
-        imports.hub.on('app', (app) => {
-            (config.services|[]).forEach((shortName) => {
-                let name = '_' + shortName + '._tcp.' + package.name + '.' + targetZoneName;
-                let port = app.services[shortName].address.port;
-                log.info('registering service', name, 'has listening on', port, '@', exporter.fqdn);
-                exporter.export(name, port, config.weight || 33);
-            });
+    imports.hub.on('ready', (app) => {
+        (config.services||[]).forEach((shortName) => {
+            let name = '_' + shortName + '._tcp.' + package.name + '.' + targetZoneName;
+            let port = app.services[shortName].address().port;
+            log.info('registering service', name, 'has listening on', port, '@', exporter.fqdn);
+            exporter.publish(name, port, config.weight || 33);
         });
     });
 
+    function getFQDN(zone, host, done) {
+        client.getRecords(String(zone.id), (err, records) => {
+            if (err) {
+                return done(err);
+            }
+            return done(null, records.filter(r => r.type === "A" && r.name.indexOf(host) === 0)[0].name);
+        });
+    }
     
 
     client.getZones({}, (err, zones) => {
@@ -48,8 +44,14 @@ module.exports = function setup(config, imports, done) {
         }   
         getFQDN(zone, host, (err, fqdn) => {
             exporter = new DNSExporter(client, zone, fqdn, log);
-            return done(err);
+            return done(err, {
+                dns_exporter: exporter,
+                onDestroy: function () {
+                    exporter.unpublish();
+                }
+            });
         });
     });
 };
 module.exports.consumes = ['log', 'hub'];
+module.exports.provides = ['dns_exporter']

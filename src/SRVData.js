@@ -20,4 +20,4 @@ class SRVData {
   }
 }
 
-modules.exports = SRVData;
+module.exports = SRVData;
