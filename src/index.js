@@ -10,11 +10,13 @@ module.exports = function setup(config, imports, done) {
     let exporter;
 
     imports.hub.on('ready', (app) => {
-        (config.services||[]).forEach((shortName) => {
+        Promise.all((config.services||[]).map((shortName) => {
             let name = '_' + shortName + '._tcp.' + config.name + '.' + targetZoneName;
             let port = app.services[shortName].address().port;
             log.info('registering service', name, 'has listening on', port, '@', exporter.fqdn);
-            exporter.publish(name, port, config.weight || 33);
+            return exporter.publish(name, port, config.weight || 33);
+        })).catch((e) => {
+            this.log.error('error while publishing service', e);
         });
     });
 
