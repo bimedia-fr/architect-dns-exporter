@@ -21,8 +21,8 @@ class DNSExporter {
         this.records.push(record);
         if(srvRecord) {
             let current = SRVData.parse(srvRecord.data);
-            if (!current.equals(record.srvData)) {
-                srvRecord.data = record.srvData.toString();
+            if (!current.equals(record.data)) {
+                srvRecord.data = record.data.toString();
                 this.client.updateRecord(String(this.zone.id), srvRecord, done);
             }
         } else {
@@ -65,6 +65,7 @@ class DNSExporter {
         });
     }
     unpublish(done) {
+        this.log.info('unpublishing services');
         Promise.all(this.records.map((r) => this._delete(r)))
             .then(done)
             .catch(done);
