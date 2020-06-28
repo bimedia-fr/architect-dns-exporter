@@ -16,7 +16,7 @@ module.exports = function setup(config, imports, done) {
             log.info('registering service', name, 'has listening on', port, '@', exporter.fqdn);
             return exporter.publish(name, port, config.weight || 33);
         })).catch((e) => {
-            this.log.error('error while publishing service', e);
+            log.error('error while publishing service', e);
         });
     });
 
