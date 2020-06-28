@@ -23,34 +23,39 @@ class DNSExporter {
             let current = SRVData.parse(srvRecord.data);
             if (!current.equals(record.data)) {
                 srvRecord.data = record.data.toString();
-                this.client.updateRecord(String(this.zone.id), srvRecord, done);
+                return this.client.updateRecord(String(this.zone.id), srvRecord, done);
             }
-        } else {
-            record.data = record.data.toString();
-            this.client.createRecord(String(this.zone.id), record, done);
-        }
+            return done(null, srvRecord);
+        } 
+        record.data = record.data.toString();
+        this.client.createRecord(String(this.zone.id), record, done);
     }
-    publish(name, port, weight, done) {
+    publish(name, port, weight) {
         let srvData = new SRVData(weight, port, this.fqdn);
-        this.client.getRecords(String(this.zone.id), (err, records) => {
-            if (err) {
-                this.log.error('unable to read records from zone', err);
-                return done && done(err);
-            }
-            let srvRecords = getSRV(name, this.fqdn, records);
-            let srvRecord = srvRecords && srvRecords[0];
-            let record = {
-                name: name,
-                type: 'SRV',
-                data: srvData,
-                ttl: 300,
-                priority: 100
-            }
-            this._createOrUpdate(record, srvRecord, (err, res) => {
-                if (res) {
-                    this.records.push(res.id);
+        return new Promise((resolve, reject) => {
+            this.client.getRecords(String(this.zone.id), (err, records) => {
+                if (err) {
+                    this.log.error('unable to read records from zone', err);
+                    return reject(err);
                 }
-                return done && done(err);
+                let srvRecords = getSRV(name, this.fqdn, records);
+                let srvRecord = srvRecords && srvRecords[0];
+                let record = {
+                    name: name,
+                    type: 'SRV',
+                    data: srvData,
+                    ttl: 300,
+                    priority: 100
+                }
+                this._createOrUpdate(record, srvRecord, (err, res) => {
+                    if (res) {
+                        this.records.push(res.id);
+                    }
+                    if (err) {
+                        return reject(err);
+                    }
+                    return resolve(err);
+                });
             });
         });
     }
@@ -64,11 +69,9 @@ class DNSExporter {
             });
         });
     }
-    unpublish(done) {
+    unpublish() {
         this.log.info('unpublishing services');
-        Promise.all(this.records.map((r) => this._delete(r)))
-            .then(done)
-            .catch(done);
+        return Promise.all(this.records.map((r) => this._delete(r)));
     }
 }
 
