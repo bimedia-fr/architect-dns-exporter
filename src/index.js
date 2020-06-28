@@ -4,7 +4,7 @@ const os = require('os'),
 
 module.exports = function setup(config, imports, done) {
     const log = imports.log.getLogger("dns-exporter");
-    const host = os.hostname();
+    const host = os.hostname().split('.')[0];
     const client = pkgcloud.dns.createClient(config.client);
     let targetZoneName = config.targetZone;
     let exporter;
@@ -23,7 +23,8 @@ module.exports = function setup(config, imports, done) {
             if (err) {
                 return done(err);
             }
-            return done(null, records.filter(r => r.type === "A" && r.name.indexOf(host) === 0)[0].name);
+            let matches = records.filter(r => r.type === "A" && r.name.indexOf(host) === 0);
+            return done(null, matches[0] && matches[0].name);
         });
     }
     
